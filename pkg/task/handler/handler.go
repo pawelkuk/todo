@@ -1,0 +1,197 @@
+package handler
+
+import (
+	"net/http"
+	"strconv"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	model "github.com/pawelkuk/todo/pkg/task/model"
+	repo "github.com/pawelkuk/todo/pkg/task/repo"
+)
+
+type Handler struct {
+	Repo repo.Repo
+}
+
+type taskPOST struct {
+	Title       string `json:"title" binding:"required"`
+	Description string `json:"description"`
+	DueDate     string `json:"dueDate" binding:"required"`
+}
+
+type taskGET struct {
+	ID          int    `json:"id"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	DueDate     string `json:"dueDate"`
+	CreatedAt   string `json:"createdAt"`
+	UpdatedAt   string `json:"updatedAt"`
+	Completed   bool   `json:"completed"`
+}
+
+type taskList struct {
+	Items []taskGET `json:"items"`
+}
+
+type TaskPATCH struct {
+	Title       string `json:"title,omitempty"`
+	Description string `json:"description,omitempty"`
+	DueDate     string `json:"dueDate,omitempty"`
+	Completed   *bool  `json:"completed"`
+}
+
+func parseTaskGet(task model.Task) taskGET {
+	return taskGET{
+		ID:          int(task.ID),
+		Title:       task.Title,
+		Description: task.Description,
+		DueDate:     task.DueDate.Format(time.DateOnly),
+		CreatedAt:   task.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:   task.UpdatedAt.Format(time.RFC3339),
+		Completed:   task.Completed,
+	}
+}
+
+func (h *Handler) Get(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	task := &model.Task{ID: id}
+	err = h.Repo.Read(c.Request.Context(), task)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, parseTaskGet(*task))
+}
+
+func (h *Handler) List(c *gin.Context) {
+	tasks, err := h.Repo.Query(c.Request.Context(), model.QueryFilter{})
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+	res := taskList{}
+	for _, t := range tasks {
+		res.Items = append(res.Items, parseTaskGet(t))
+	}
+	c.JSON(http.StatusOK, res)
+}
+
+func (h *Handler) Post(c *gin.Context) {
+	taskpost := &taskPOST{}
+	err := c.BindJSON(taskpost)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	t, err := model.Parse(
+		taskpost.Title,
+		model.WithDescription(taskpost.Description),
+		model.WithDueDate(taskpost.DueDate),
+	)
+	err = h.Repo.Create(c.Request.Context(), t)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusCreated, gin.H{"id": t.ID})
+}
+
+func (h *Handler) PostComplete(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	task := &model.Task{ID: id}
+	err = h.Repo.Read(c.Request.Context(), task)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+	if task.Completed {
+		c.JSON(http.StatusAccepted, gin.H{"id": task.ID})
+		return
+	}
+	task.Completed = true
+	task.UpdatedAt = time.Now()
+	err = h.Repo.Update(c.Request.Context(), task)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusAccepted, gin.H{"id": task.ID})
+}
+
+func (h *Handler) Delete(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	task := &model.Task{ID: id}
+	err = h.Repo.Read(c.Request.Context(), task)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+	err = h.Repo.Delete(c.Request.Context(), task)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusNoContent, gin.H{})
+}
+
+func (h *Handler) Patch(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	taskPatch := &TaskPATCH{}
+	err = c.BindJSON(taskPatch)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	task := &model.Task{ID: id}
+	err = h.Repo.Read(c.Request.Context(), task)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	// no need to check if null because of omit_empty tag
+	if taskPatch.Title != "" {
+		task.Title = taskPatch.Title
+	}
+	if taskPatch.Description != "" {
+		task.Description = taskPatch.Description
+	}
+	if taskPatch.Completed != nil {
+		task.Completed = *taskPatch.Completed
+	}
+	if taskPatch.DueDate != "" {
+		dueDate, err := time.Parse(time.DateOnly, taskPatch.DueDate)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		task.DueDate = dueDate
+	}
+	task.UpdatedAt = time.Now()
+	err = h.Repo.Update(c.Request.Context(), task)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusAccepted, gin.H{"id": task.ID})
+}

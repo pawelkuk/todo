@@ -1,0 +1,15 @@
+package user
+
+import (
+	"context"
+
+	model "github.com/pawelkuk/todo/pkg/user/model"
+)
+
+type Repo interface {
+	Create(context.Context, *model.User) error
+	Read(context.Context, *model.User) error
+	Update(context.Context, *model.User) error
+	Delete(context.Context, *model.User) error
+	Query(context.Context, model.QueryFilter) ([]model.User, error)
+}
