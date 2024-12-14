@@ -2,6 +2,7 @@ package task
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -15,7 +16,9 @@ type Task struct {
 	Completed   bool
 }
 
-func Parse(title string, options ...func(*Task) error) (*Task, error) {
+type TaskOpt func(*Task) error
+
+func Parse(title string, options ...TaskOpt) (*Task, error) {
 	task := &Task{}
 	if title == "" {
 		return nil, fmt.Errorf("title can't be empty")
@@ -64,4 +67,28 @@ func WithDueDate(dueDate string) func(*Task) error {
 		t.DueDate = dueDateTime
 		return nil
 	}
+}
+
+func (t *Task) String() string {
+	builder := strings.Builder{}
+	builder.WriteString(fmt.Sprintf("%6d. ", t.ID))
+	if t.Completed {
+		builder.WriteString("[x] ")
+	} else {
+		builder.WriteString("[ ] ")
+	}
+	if !t.DueDate.IsZero() {
+		builder.WriteString(fmt.Sprintf("due: %s", t.DueDate.Format(time.DateOnly)))
+	} else {
+		builder.WriteString("no due date")
+	}
+	builder.WriteString(fmt.Sprintf("| %s", truncateText(t.Title, 50)))
+	return builder.String()
+}
+
+func truncateText(s string, max int) string {
+	if max > len(s) {
+		return s
+	}
+	return s[:strings.LastIndexAny(s[:max], " .,:;-")] + "…"
 }

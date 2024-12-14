@@ -2,11 +2,11 @@
 
 ## features:
 
-- [ ] add task
-- [ ] delete task
-- [ ] complete task
-- [ ] list task
-- [ ] edit task
+- [x] add task
+- [x] delete task
+- [x] complete task
+- [ ] list task (missing api)
+- [ ] edit task (missing cli)
 - [ ] reoccurring tasks
 - [ ] scheduled tasks for specific days
 - [ ] reminders (email, push, etc...)
