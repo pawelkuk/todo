@@ -39,6 +39,7 @@ func Initialize(rootCmd *cobra.Command) {
 		Repo: &repo.SQLiteRepo{DB: db},
 	}
 	rootCmd.AddCommand(periodicCmd)
+	// We want them to be subcommands of periodicCmd in order not to have name clashes with normal tasks
 	initAdd(periodicCmd)
 	initList(periodicCmd)
 	initDelete(periodicCmd)
