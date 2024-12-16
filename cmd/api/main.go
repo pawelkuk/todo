@@ -38,7 +38,7 @@ func serve() error {
 	}
 	r := gin.Default()
 
-	authMiddleware := middleware.Middleware{Repo: &authrepo.SQLiteRepo{DB: db}}
+	authMiddleware := middleware.Middleware{Repo: &authrepo.SQLiteRepo{DB: db}, Config: cfg}
 	authHandler := auth.Handler{
 		Repo:     &authrepo.SQLiteRepo{DB: db},
 		UserRepo: &userrepo.SQLiteRepo{DB: db}}

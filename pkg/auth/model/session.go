@@ -26,6 +26,6 @@ func New(userid int64) Session {
 	}
 }
 
-func (s *Session) Refresh() {
-	s.Expiry = time.Now().Add(24 * time.Hour)
+func (s *Session) Refresh(duration time.Duration) {
+	s.Expiry = time.Now().Add(duration)
 }
