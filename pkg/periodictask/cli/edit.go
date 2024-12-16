@@ -15,39 +15,30 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/pawelkuk/todo/pkg/config"
-	"github.com/pawelkuk/todo/pkg/task/model"
-	"github.com/pawelkuk/todo/pkg/task/repo"
+	"github.com/pawelkuk/todo/pkg/periodictask/model"
+	"github.com/pawelkuk/todo/pkg/periodictask/repo"
 	"github.com/spf13/cobra"
 )
 
 // editCmd represents the edit command
 var editCmd = &cobra.Command{
 	Use:   "edit task_id",
-	Short: "Edit a task in todo list",
-	Long: `Edit a task in todo list.
+	Short: "Edit a periodic task in todo list",
+	Long: `Edit a periodic task in todo list.
 
-Opens the task in yaml format in editor specified by $EDITOR env variable.
+Opens the periodic task in yaml format in editor specified by $EDITOR env variable.
 The id field is not editable. It serves an informational purpose only. If
 any modified value does not match the required format the edit won't take effect.
 
 Example:
-todo edit 1  # edit task with id = 1
+todo pt edit 1  # edit periodic task with id = 1
 `,
 	RunE:              editHandler.RunE,
-	ValidArgsFunction: editHandler.ListIncompleteTasks,
+	ValidArgsFunction: editHandler.ListPeriodicTasks,
 }
 
 func initEdit(rootCmd *cobra.Command) {
 	rootCmd.AddCommand(editCmd)
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// editCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// editCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
 type EditHandler struct {
@@ -71,13 +62,13 @@ func (h *EditHandler) RunE(cmd *cobra.Command, args []string) error {
 	if taskID == 0 {
 		return fmt.Errorf("could not much provided args: %s", strings.Join(args, " "))
 	}
-	t := &model.Task{ID: int64(taskID)}
+	t := &model.PeriodicTask{ID: int64(taskID)}
 	err := h.Repo.Read(cmd.Context(), t)
 	originalTask, err := marshalToYaml(t)
 	if err != nil {
 		return fmt.Errorf("could not get original content: %w", err)
 	}
-	tmpFile, err := os.CreateTemp("/tmp", "tmp-task.yaml")
+	tmpFile, err := os.CreateTemp("/tmp", "tmp-periodic-task.yaml")
 	if err != nil {
 		return fmt.Errorf("failed to create temporary file: %w", err)
 	}
@@ -117,8 +108,7 @@ func (h *EditHandler) RunE(cmd *cobra.Command, args []string) error {
 	}
 	t.Title = modifiedTask.Title
 	t.Description = modifiedTask.Description
-	t.DueDate = modifiedTask.DueDate
-	t.Completed = modifiedTask.Completed
+	t.Schedule = modifiedTask.Schedule
 	t.UpdatedAt = time.Now()
 	err = h.Repo.Update(cmd.Context(), t)
 	if err != nil {
@@ -128,13 +118,12 @@ func (h *EditHandler) RunE(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func marshalToYaml(t *model.Task) (string, error) {
+func marshalToYaml(t *model.PeriodicTask) (string, error) {
 	yamltask := &yamltask{
 		ID:          t.ID,
 		Title:       t.Title,
 		Description: t.Description,
-		DueDate:     t.DueDate.Format(time.DateOnly),
-		Completed:   t.Completed,
+		Schedule:    t.Schedule,
 	}
 	out, err := yaml.Marshal(yamltask)
 	if err != nil {
@@ -143,7 +132,7 @@ func marshalToYaml(t *model.Task) (string, error) {
 	return string(out), nil
 }
 
-func unmarshalYaml(taskStr []byte) (*model.Task, error) {
+func unmarshalYaml(taskStr []byte) (*model.PeriodicTask, error) {
 	yamltask := &yamltask{}
 	err := yaml.Unmarshal(taskStr, yamltask)
 	if err != nil {
@@ -151,10 +140,9 @@ func unmarshalYaml(taskStr []byte) (*model.Task, error) {
 	}
 	t, err := model.Parse(
 		yamltask.Title,
-		model.WithCompleted(yamltask.Completed),
+		yamltask.Schedule,
 		model.WithDescription(yamltask.Description),
 		model.WithID(yamltask.ID),
-		model.WithDueDate(yamltask.DueDate),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("could not parse task: %w", err)
@@ -167,10 +155,9 @@ type yamltask struct {
 	ID          int64  `yaml:"id"`
 	Title       string `yaml:"title"`
 	Description string `yaml:"description"`
-	DueDate     string `yaml:"dueDate"`
-	Completed   bool   `yaml:"completed"`
+	Schedule    string `yaml:"schedule"`
 }
 
-func (h *EditHandler) ListIncompleteTasks(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	return listIncompleteTasks(cmd, args, toComplete, h.Repo)
+func (h *EditHandler) ListPeriodicTasks(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return listPeriodicTasks(cmd, args, toComplete, h.Repo)
 }

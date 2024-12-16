@@ -9,34 +9,25 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pawelkuk/todo/pkg/task/model"
-	"github.com/pawelkuk/todo/pkg/task/repo"
+	"github.com/pawelkuk/todo/pkg/periodictask/model"
+	"github.com/pawelkuk/todo/pkg/periodictask/repo"
 	"github.com/spf13/cobra"
 )
 
 // deleteCmd represents the delete command
 var deleteCmd = &cobra.Command{
 	Use:   "delete task_id",
-	Short: "Delete a task from todo list",
-	Long: `Delete a task from todo list. Task id can be obtained
+	Short: "Delete a periodic task from todo list",
+	Long: `Delete a periodic task from todo list. Periodic task id can be obtained
 via tab completion or via the list command. Example:
 
-todo delete 1  # delete task with id 1`,
+todo pt delete 1  # delete task with id 1`,
 	RunE:              deleteHandler.Handle,
-	ValidArgsFunction: deleteHandler.ListIncompleteTasks,
+	ValidArgsFunction: deleteHandler.ListPeriodicTasks,
 }
 
 func initDelete(rootCmd *cobra.Command) {
 	rootCmd.AddCommand(deleteCmd)
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// deleteCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// deleteCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
 type DeleteHandler struct {
@@ -59,7 +50,7 @@ func (h *DeleteHandler) Handle(cmd *cobra.Command, args []string) error {
 	if taskID == 0 {
 		return fmt.Errorf("could not much provided args: %s", strings.Join(args, " "))
 	}
-	t := &model.Task{ID: int64(taskID)}
+	t := &model.PeriodicTask{ID: int64(taskID)}
 	err := h.Repo.Delete(cmd.Context(), t)
 	if err != nil {
 		return fmt.Errorf("could not delete task: %w", err)
@@ -68,6 +59,6 @@ func (h *DeleteHandler) Handle(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func (h *DeleteHandler) ListIncompleteTasks(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	return listIncompleteTasks(cmd, args, toComplete, h.Repo)
+func (h *DeleteHandler) ListPeriodicTasks(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return listPeriodicTasks(cmd, args, toComplete, h.Repo)
 }

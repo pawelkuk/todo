@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/robfig/cron"
@@ -16,7 +17,7 @@ type PeriodicTask struct {
 	Schedule    string
 }
 
-func Parse(title string, schedule string, options ...func(*PeriodicTask) error) (*PeriodicTask, error) {
+func Parse(title string, schedule string, options ...PeriodicTaskOpt) (*PeriodicTask, error) {
 	task := &PeriodicTask{}
 	if title == "" {
 		return nil, fmt.Errorf("title can't be empty")
@@ -38,6 +39,8 @@ func Parse(title string, schedule string, options ...func(*PeriodicTask) error) 
 	return task, nil
 }
 
+type PeriodicTaskOpt func(*PeriodicTask) error
+
 func WithDescription(description string) func(*PeriodicTask) error {
 	return func(t *PeriodicTask) error {
 		if description == "" {
@@ -53,4 +56,22 @@ func WithID(id int64) func(*PeriodicTask) error {
 		t.ID = id
 		return nil
 	}
+}
+
+func (t *PeriodicTask) String() string {
+	builder := strings.Builder{}
+	builder.WriteString(fmt.Sprintf("%6d. ", t.ID))
+	builder.WriteString(t.Schedule)
+	builder.WriteString(fmt.Sprintf("| %s", truncateText(t.Title, 50)))
+	if t.Description != "" {
+		builder.WriteString(fmt.Sprintf(" | %s", truncateText(t.Description, 50)))
+	}
+	return builder.String()
+}
+
+func truncateText(s string, max int) string {
+	if max > len(s) {
+		return s
+	}
+	return s[:strings.LastIndexAny(s[:max], " .,:;-")] + "…"
 }

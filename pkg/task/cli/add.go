@@ -27,7 +27,7 @@ Examples:
 	Args: cobra.ArbitraryArgs,
 }
 
-func init() {
+func initAdd(rootCmd *cobra.Command) {
 	rootCmd.AddCommand(addCmd)
 
 	// Here you will define your flags and configuration settings.

@@ -50,6 +50,10 @@ func listIncompleteTasks(cmd *cobra.Command, _ []string, toComplete string, repo
 		if t.Completed {
 			continue
 		}
+		if toComplete == "" {
+			res = append(res, t.String())
+			continue
+		}
 		if strings.Contains(strconv.Itoa(int(t.ID)), toComplete) {
 			res = append(res, t.String())
 			continue

@@ -26,7 +26,7 @@ todo list --before 2024-12-31 --after 2024-12-01  # list all incomplete tasks fo
 	RunE: listHandler.Handle,
 }
 
-func init() {
+func initList(rootCmd *cobra.Command) {
 	rootCmd.AddCommand(listCmd)
 	listCmd.Flags().BoolP("all", "A", false, "Lists tasks including incomplete onces. Default: false")
 	listCmd.Flags().BoolP("today", "t", false, "Lists tasks for today. Default: false")

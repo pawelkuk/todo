@@ -26,7 +26,7 @@ can be obtained via tab completion or the list command.:
 	ValidArgsFunction: completeHandler.ListIncompleteTasks,
 }
 
-func init() {
+func initComplete(rootCmd *cobra.Command) {
 	rootCmd.AddCommand(completeCmd)
 
 	// Here you will define your flags and configuration settings.

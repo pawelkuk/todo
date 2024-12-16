@@ -7,6 +7,7 @@ import (
 	"github.com/caarlos0/env/v11"
 	"github.com/pawelkuk/todo/pkg/config"
 	"github.com/pawelkuk/todo/pkg/task/repo"
+	"github.com/spf13/cobra"
 )
 
 var editHandler EditHandler
@@ -15,7 +16,7 @@ var deleteHandler DeleteHandler
 var completeHandler CompleteHandler
 var addHandler AddHandler
 
-func Initialize() {
+func Initialize(rootCmd *cobra.Command) {
 	var cfg config.Config
 	err := env.Parse(&cfg)
 	if err != nil {
@@ -41,4 +42,9 @@ func Initialize() {
 	addHandler = AddHandler{
 		Repo: &repo.SQLiteRepo{DB: db},
 	}
+	initAdd(rootCmd)
+	initList(rootCmd)
+	initComplete(rootCmd)
+	initDelete(rootCmd)
+	initEdit(rootCmd)
 }

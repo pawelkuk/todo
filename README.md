@@ -7,8 +7,8 @@
 - [x] complete task
 - [x] list task
 - [x] edit task
-- [ ] reoccurring tasks
-- [ ] scheduled tasks for specific days
+- [x] reoccurring tasks
+- [x] scheduled tasks for specific days
 - [ ] reminders (email, push, etc...)
 - [x] show tasks for today (including done)
 - [ ] color code cli output
