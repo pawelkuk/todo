@@ -4,14 +4,8 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cli
 
 import (
-	"context"
-	"database/sql"
-	"fmt"
 	"os"
 
-	"github.com/caarlos0/env/v11"
-	"github.com/pawelkuk/todo/pkg/config"
-	taskrepo "github.com/pawelkuk/todo/pkg/task/repo"
 	"github.com/spf13/cobra"
 )
 
@@ -28,28 +22,6 @@ to quickly create a Cobra application.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	// Run: func(cmd *cobra.Command, args []string) { },
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		var cfg config.Config
-		err := env.Parse(&cfg)
-		if err != nil {
-			return fmt.Errorf("could not parse config: %v", err)
-		}
-		db, err := sql.Open("sqlite3", cfg.DBPath)
-		if err != nil {
-			return fmt.Errorf("could not open database: %w", err)
-		}
-		ctx := context.WithValue(cmd.Context(), "repo", &taskrepo.SQLiteRepo{DB: db})
-		cmd.SetContext(ctx)
-		return nil
-	},
-	PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
-		repo := cmd.Context().Value("repo").(*taskrepo.SQLiteRepo)
-		err := repo.DB.Close()
-		if err != nil {
-			return fmt.Errorf("could not close db: %w", err)
-		}
-		return nil
-	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

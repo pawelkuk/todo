@@ -8,7 +8,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 
 	task "github.com/pawelkuk/todo/pkg/task/model"
 	taskrepo "github.com/pawelkuk/todo/pkg/task/repo"
@@ -17,48 +16,14 @@ import (
 
 // completeCmd represents the complete command
 var completeCmd = &cobra.Command{
-	Use:   "complete",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Use:   "complete task_id",
+	Short: "Complete a task from your todo list",
+	Long: `Complete a task from your todo list. The id of the task
+can be obtained via tab completion or the list command.:
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		repo := cmd.Context().Value("repo").(*taskrepo.SQLiteRepo)
-		taskExpr := regexp.MustCompile(`^(\s+)?(?<taskid>\d+)`)
-		match := taskExpr.FindStringSubmatch(strings.Join(args, " "))
-		var taskID int
-		for i, name := range taskExpr.SubexpNames() {
-			if i != 0 && name != "" && len(match[i]) != 0 {
-				tmpTaskID, err := strconv.Atoi(match[i])
-				if err != nil {
-					return fmt.Errorf("could not parse number: %w", err)
-				}
-				taskID = tmpTaskID
-			}
-		}
-		if taskID == 0 {
-			return fmt.Errorf("could not much provided args: %s", strings.Join(args, " "))
-		}
-		t := &task.Task{ID: int64(taskID)}
-		err := repo.Read(cmd.Context(), t)
-		if err != nil {
-			return fmt.Errorf("could not read task: %w", err)
-		}
-		if t.Completed {
-			return fmt.Errorf("task %d already completed...\n", taskID)
-		}
-		t.Completed = true
-		err = repo.Update(cmd.Context(), t)
-		if err != nil {
-			return fmt.Errorf("could not update task: %w\n", err)
-		}
-		fmt.Printf("task %d completed...\n", t.ID)
-		return nil
-	},
-	ValidArgsFunction: listIncompleteTasks,
+`,
+	RunE:              completeHandler.Handle,
+	ValidArgsFunction: completeHandler.ListIncompleteTasks,
 }
 
 func init() {
@@ -75,34 +40,43 @@ func init() {
 	// completeCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
-func listIncompleteTasks(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	repo := cmd.Context().Value("repo").(*taskrepo.SQLiteRepo)
-	tasks, err := repo.Query(cmd.Context(), task.QueryFilter{})
+type CompleteHandler struct {
+	Repo taskrepo.Repo
+}
+
+func (h *CompleteHandler) Handle(cmd *cobra.Command, args []string) error {
+	taskExpr := regexp.MustCompile(`^(\s+)?(?<taskid>\d+)`)
+	match := taskExpr.FindStringSubmatch(strings.Join(args, " "))
+	var taskID int
+	for i, name := range taskExpr.SubexpNames() {
+		if i != 0 && name != "" && len(match[i]) != 0 {
+			tmpTaskID, err := strconv.Atoi(match[i])
+			if err != nil {
+				return fmt.Errorf("could not parse number: %w", err)
+			}
+			taskID = tmpTaskID
+		}
+	}
+	if taskID == 0 {
+		return fmt.Errorf("could not much provided args: %s", strings.Join(args, " "))
+	}
+	t := &task.Task{ID: int64(taskID)}
+	err := h.Repo.Read(cmd.Context(), t)
 	if err != nil {
-		fmt.Printf("could not query for tasks: %v\n", err)
-		return []string{}, cobra.ShellCompDirectiveNoFileComp
+		return fmt.Errorf("could not read task: %w", err)
 	}
-	res := []string{}
-	for _, t := range tasks {
-		if t.Completed {
-			continue
-		}
-		if strings.Contains(strconv.Itoa(int(t.ID)), toComplete) {
-			res = append(res, t.String())
-			continue
-		}
-		if strings.Contains(t.Title, toComplete) {
-			res = append(res, t.String())
-			continue
-		}
-		if strings.Contains(t.Description, toComplete) {
-			res = append(res, t.String())
-			continue
-		}
-		if strings.Contains(t.DueDate.Format(time.DateOnly), toComplete) {
-			res = append(res, t.String())
-			continue
-		}
+	if t.Completed {
+		return fmt.Errorf("task %d already completed...\n", taskID)
 	}
-	return res, cobra.ShellCompDirectiveNoFileComp
+	t.Completed = true
+	err = h.Repo.Update(cmd.Context(), t)
+	if err != nil {
+		return fmt.Errorf("could not update task: %w\n", err)
+	}
+	fmt.Printf("task %d completed...\n", t.ID)
+	return nil
+}
+
+func (h *CompleteHandler) ListIncompleteTasks(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return listIncompleteTasks(cmd, args, toComplete, h.Repo)
 }

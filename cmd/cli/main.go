@@ -6,5 +6,6 @@ package main
 import "github.com/pawelkuk/todo/pkg/task/cli"
 
 func main() {
+	cli.Initialize()
 	cli.Execute()
 }

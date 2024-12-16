@@ -16,68 +16,14 @@ import (
 
 // addCmd represents the add command
 var addCmd = &cobra.Command{
-	Use:   "add",
+	Use:   "add task_title",
 	Short: "Add a task in your todo list",
-	Long: `A longer description that spans multiple lines and likely contains examples
-	and usage of using your command. For example:
+	Long: `Add a task to your todo list. 
 	
-	Cobra is a CLI library for Go that empowers applications.
-	This application is a tool to generate the needed files
-	to quickly create a Cobra application.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		repo := cmd.Context().Value("repo").(*taskrepo.SQLiteRepo)
-		due, err := cmd.Flags().GetString("due")
-		if err != nil {
-			return fmt.Errorf("could not get due: %w", err)
-		}
-		dueDate, err := cmd.Flags().GetString("due-date")
-		if err != nil {
-			return fmt.Errorf("could not get due-date: %w", err)
-		}
-		var dueTime time.Time
-		if due != "" {
-			dur, err := parseDue(due)
-			if err != nil {
-				return fmt.Errorf("could not parse due time: %w", err)
-			}
-			dueTime = time.Now().Add(dur)
-		}
-		if dueDate != "" {
-			dueTime, err = time.Parse(time.DateOnly, dueDate)
-			if err != nil {
-				return fmt.Errorf("could not parse due date: %w", err)
-			}
-		}
-		opts := []task.TaskOpt{}
-		if !dueTime.IsZero() {
-			opts = append(opts, task.WithDueDate(dueTime.Format(time.DateOnly)))
-		}
-		info, err := cmd.Flags().GetString("info")
-		if err != nil {
-			return fmt.Errorf("could not get info: %w", err)
-		}
-		if info != "" {
-			opts = append(opts, task.WithDescription(info))
-		}
-		title := strings.Join(args, " ")
-		t, err := task.Parse(title, opts...)
-		if err != nil {
-			return fmt.Errorf("could not parse task: %w", err)
-		}
-		err = repo.Create(cmd.Context(), t)
-		if err != nil {
-			return fmt.Errorf("could not create task: %w", err)
-		}
-		fmt.Printf("task %d:\n", t.ID)
-		fmt.Printf("\ttitle:       %s\n", t.Title)
-		if t.Description != "" {
-			fmt.Printf("\tdescription: %s\n", t.Description)
-		}
-		if !t.DueDate.IsZero() {
-			fmt.Printf("\tdue date:    %s\n", t.DueDate.Format(time.DateOnly))
-		}
-		return nil
-	},
+Examples:
+  todo add implement a new feature --due 1w -i "feature regards our web app and it is due one week from now"
+  todo add test feature --due-date "2040-12-31" -i "we have a long time to test this feature"`,
+	RunE: addHandler.Handle,
 	Args: cobra.ArbitraryArgs,
 }
 
@@ -94,8 +40,67 @@ func init() {
 	// is called directly, e.g.:
 	addCmd.Flags().StringP("due", "d", "", `Time from now when the task is due.
 Units: h - hours, d - days, w - weeks , m - months, y - years.
-Examples: 10d - due in 10 days, 1h2d3w4m - due in 1 hour 2 days 3 weeks and 4 months. Default: no due time`)
+Examples: 10d - due in 10 days, 1h2d3w4m - due in 1 hour 2 days 3 weeks and 4 months.
+Default: no due time`)
 	addCmd.Flags().StringP("due-date", "D", "", "Date where the task is due. Format: yyyy-mm-dd. Default: no due date")
 	addCmd.MarkFlagsMutuallyExclusive("due", "due-date")
 	addCmd.Flags().StringP("info", "i", "", "Additional information or details regarding the task. Default: none")
+}
+
+type AddHandler struct {
+	Repo taskrepo.Repo
+}
+
+func (h *AddHandler) Handle(cmd *cobra.Command, args []string) error {
+	due, err := cmd.Flags().GetString("due")
+	if err != nil {
+		return fmt.Errorf("could not get due: %w", err)
+	}
+	dueDate, err := cmd.Flags().GetString("due-date")
+	if err != nil {
+		return fmt.Errorf("could not get due-date: %w", err)
+	}
+	var dueTime time.Time
+	if due != "" {
+		dur, err := parseDue(due)
+		if err != nil {
+			return fmt.Errorf("could not parse due time: %w", err)
+		}
+		dueTime = time.Now().Add(dur)
+	}
+	if dueDate != "" {
+		dueTime, err = time.Parse(time.DateOnly, dueDate)
+		if err != nil {
+			return fmt.Errorf("could not parse due date: %w", err)
+		}
+	}
+	opts := []task.TaskOpt{}
+	if !dueTime.IsZero() {
+		opts = append(opts, task.WithDueDate(dueTime.Format(time.DateOnly)))
+	}
+	info, err := cmd.Flags().GetString("info")
+	if err != nil {
+		return fmt.Errorf("could not get info: %w", err)
+	}
+	if info != "" {
+		opts = append(opts, task.WithDescription(info))
+	}
+	title := strings.Join(args, " ")
+	t, err := task.Parse(title, opts...)
+	if err != nil {
+		return fmt.Errorf("could not parse task: %w", err)
+	}
+	err = h.Repo.Create(cmd.Context(), t)
+	if err != nil {
+		return fmt.Errorf("could not create task: %w", err)
+	}
+	fmt.Printf("task %d:\n", t.ID)
+	fmt.Printf("\ttitle:       %s\n", t.Title)
+	if t.Description != "" {
+		fmt.Printf("\tdescription: %s\n", t.Description)
+	}
+	if !t.DueDate.IsZero() {
+		fmt.Printf("\tdue date:    %s\n", t.DueDate.Format(time.DateOnly))
+	}
+	return nil
 }

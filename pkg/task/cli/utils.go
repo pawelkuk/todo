@@ -4,7 +4,12 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
+
+	task "github.com/pawelkuk/todo/pkg/task/model"
+	taskrepo "github.com/pawelkuk/todo/pkg/task/repo"
+	"github.com/spf13/cobra"
 )
 
 func parseDue(d string) (time.Duration, error) {
@@ -32,4 +37,35 @@ func parseDue(d string) (time.Duration, error) {
 		}
 	}
 	return duration, nil
+}
+
+func listIncompleteTasks(cmd *cobra.Command, _ []string, toComplete string, repo taskrepo.Repo) ([]string, cobra.ShellCompDirective) {
+	tasks, err := repo.Query(cmd.Context(), task.QueryFilter{})
+	if err != nil {
+		fmt.Printf("could not query for tasks: %v\n", err)
+		return []string{}, cobra.ShellCompDirectiveNoFileComp
+	}
+	res := []string{}
+	for _, t := range tasks {
+		if t.Completed {
+			continue
+		}
+		if strings.Contains(strconv.Itoa(int(t.ID)), toComplete) {
+			res = append(res, t.String())
+			continue
+		}
+		if strings.Contains(t.Title, toComplete) {
+			res = append(res, t.String())
+			continue
+		}
+		if strings.Contains(t.Description, toComplete) {
+			res = append(res, t.String())
+			continue
+		}
+		if strings.Contains(t.DueDate.Format(time.DateOnly), toComplete) {
+			res = append(res, t.String())
+			continue
+		}
+	}
+	return res, cobra.ShellCompDirectiveNoFileComp
 }

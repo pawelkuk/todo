@@ -6,6 +6,7 @@ package cli
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	task "github.com/pawelkuk/todo/pkg/task/model"
 	taskrepo "github.com/pawelkuk/todo/pkg/task/repo"
@@ -16,37 +17,23 @@ import (
 // listCmd represents the list command
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "List tasks",
+	Long: `List tasks. Example:
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		repo := cmd.Context().Value("repo").(*taskrepo.SQLiteRepo)
-		qf := task.QueryFilter{}
-		all, err := cmd.Flags().GetBool("all")
-		if err != nil {
-			return fmt.Errorf("could not get flag: %w", err)
-		}
-		if !all {
-			tmp := true
-			qf.Completed = &tmp
-		}
-		tasks, err := repo.Query(cmd.Context(), qf)
-		if err != nil {
-			return fmt.Errorf("could not query tasks: %w", err)
-		}
-		res := lo.Map(tasks, func(t task.Task, idx int) string { return t.String() })
-		fmt.Println(strings.Join(res, "\n"))
-		return nil
-	},
+todo list --today  # list all incomplete tasks due today
+todo list --today -A  # list all tasks due today
+todo list --before 2024-12-31 --after 2024-12-01  # list all incomplete tasks for December`,
+	RunE: listHandler.Handle,
 }
 
 func init() {
 	rootCmd.AddCommand(listCmd)
-	listCmd.Flags().BoolP("all", "A", false, "Lists all tasks including incomplete onces. Default: false")
+	listCmd.Flags().BoolP("all", "A", false, "Lists tasks including incomplete onces. Default: false")
+	listCmd.Flags().BoolP("today", "t", false, "Lists tasks for today. Default: false")
+	listCmd.Flags().StringP("before", "b", "", "Lists tasks due before given date. Format: yyyy-mm-dd")
+	listCmd.Flags().StringP("after", "a", "", "Lists tasks due after given date. Format: yyyy-mm-dd")
+	listCmd.MarkFlagsMutuallyExclusive("today", "before")
+	listCmd.MarkFlagsMutuallyExclusive("today", "after")
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
@@ -56,4 +43,61 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// listCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+}
+
+type ListHandler struct {
+	Repo taskrepo.Repo
+}
+
+func (h *ListHandler) Handle(cmd *cobra.Command, args []string) error {
+	qf := task.QueryFilter{}
+	all, err := cmd.Flags().GetBool("all")
+	if err != nil {
+		return fmt.Errorf("could not get flag: %w", err)
+	}
+	if !all {
+		tmp := false
+		qf.Completed = &tmp
+	}
+	tasks, err := h.Repo.Query(cmd.Context(), qf)
+	if err != nil {
+		return fmt.Errorf("could not query tasks: %w", err)
+	}
+	before, err := cmd.Flags().GetString("before")
+	if err != nil {
+		return fmt.Errorf("could not get flag: %w", err)
+	}
+	if before != "" {
+		beforeTime, err := time.Parse(time.DateOnly, before)
+		if err != nil {
+			return fmt.Errorf("could not parse due date: %w", err)
+		}
+		tasks = lo.Filter(tasks, func(t task.Task, idx int) bool { return t.DueDate.Before(beforeTime) })
+	}
+	after, err := cmd.Flags().GetString("after")
+	if err != nil {
+		return fmt.Errorf("could not get flag: %w", err)
+	}
+	if after != "" {
+		afterTime, err := time.Parse(time.DateOnly, after)
+		if err != nil {
+			return fmt.Errorf("could not parse due date: %w", err)
+		}
+		tasks = lo.Filter(tasks, func(t task.Task, idx int) bool { return t.DueDate.After(afterTime) })
+	}
+	today, err := cmd.Flags().GetBool("today")
+	if err != nil {
+		return fmt.Errorf("could not get flag: %w", err)
+	}
+	if today {
+		todayStr := time.Now().Format(time.DateOnly)
+		tasks = lo.Filter(tasks, func(t task.Task, idx int) bool { return t.DueDate.Format(time.DateOnly) == todayStr })
+	}
+	res := lo.Map(tasks, func(t task.Task, idx int) string { return t.String() })
+	if len(res) != 0 {
+		fmt.Println(strings.Join(res, "\n"))
+	} else {
+		fmt.Println("no tasks with matching criteria found")
+	}
+	return nil
 }

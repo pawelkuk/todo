@@ -5,20 +5,20 @@
 - [x] add task
 - [x] delete task
 - [x] complete task
-- [ ] list task (missing api)
-- [ ] edit task (missing cli)
+- [x] list task
+- [x] edit task
 - [ ] reoccurring tasks
 - [ ] scheduled tasks for specific days
 - [ ] reminders (email, push, etc...)
-- [ ] show tasks for today (including done)
+- [ ] show tasks for today (including done) (missing api)
 
 ## non functional requirements
 
 - [ ] data persisted and backed up
 - [ ] can work offline as well as online
-- [ ] can interact from command-line (but not a TUI)
-- [ ] can interact via website which should good on mobile
-- [ ] authentication
+- [x] can interact from command-line (but not a TUI)
+- [ ] can interact via website which should be good on mobile
+- [x] authentication
 - [ ] can have multiple users
 - [ ] one click sign-up
 - [ ] separation of data
