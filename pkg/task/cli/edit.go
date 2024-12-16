@@ -15,8 +15,8 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/pawelkuk/todo/pkg/config"
-	task "github.com/pawelkuk/todo/pkg/task/model"
-	taskrepo "github.com/pawelkuk/todo/pkg/task/repo"
+	"github.com/pawelkuk/todo/pkg/task/model"
+	"github.com/pawelkuk/todo/pkg/task/repo"
 	"github.com/spf13/cobra"
 )
 
@@ -50,7 +50,7 @@ func init() {
 }
 
 type EditHandler struct {
-	Repo   taskrepo.Repo
+	Repo   repo.Repo
 	Config config.Config
 }
 
@@ -70,7 +70,7 @@ func (h *EditHandler) RunE(cmd *cobra.Command, args []string) error {
 	if taskID == 0 {
 		return fmt.Errorf("could not much provided args: %s", strings.Join(args, " "))
 	}
-	t := &task.Task{ID: int64(taskID)}
+	t := &model.Task{ID: int64(taskID)}
 	err := h.Repo.Read(cmd.Context(), t)
 	originalTask, err := marshalToYaml(t)
 	if err != nil {
@@ -127,7 +127,7 @@ func (h *EditHandler) RunE(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func marshalToYaml(t *task.Task) (string, error) {
+func marshalToYaml(t *model.Task) (string, error) {
 	yamltask := &yamltask{
 		ID:          t.ID,
 		Title:       t.Title,
@@ -142,18 +142,18 @@ func marshalToYaml(t *task.Task) (string, error) {
 	return string(out), nil
 }
 
-func unmarshalYaml(taskStr []byte) (*task.Task, error) {
+func unmarshalYaml(taskStr []byte) (*model.Task, error) {
 	yamltask := &yamltask{}
 	err := yaml.Unmarshal(taskStr, yamltask)
 	if err != nil {
 		return nil, fmt.Errorf("could not unmarshal task: %w", err)
 	}
-	t, err := task.Parse(
+	t, err := model.Parse(
 		yamltask.Title,
-		task.WithCompleted(yamltask.Completed),
-		task.WithDescription(yamltask.Description),
-		task.WithID(yamltask.ID),
-		task.WithDueDate(yamltask.DueDate),
+		model.WithCompleted(yamltask.Completed),
+		model.WithDescription(yamltask.Description),
+		model.WithID(yamltask.ID),
+		model.WithDueDate(yamltask.DueDate),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("could not parse task: %w", err)

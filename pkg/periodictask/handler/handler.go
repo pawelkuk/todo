@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	model "github.com/pawelkuk/todo/pkg/periodictask/model"
-	repo "github.com/pawelkuk/todo/pkg/periodictask/repo"
+	"github.com/pawelkuk/todo/pkg/periodictask/model"
+	"github.com/pawelkuk/todo/pkg/periodictask/repo"
 	"github.com/robfig/cron"
 )
 

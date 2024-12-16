@@ -5,8 +5,8 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	model "github.com/pawelkuk/todo/pkg/user/model"
-	userrepo "github.com/pawelkuk/todo/pkg/user/repo"
+	"github.com/pawelkuk/todo/pkg/user/model"
+	"github.com/pawelkuk/todo/pkg/user/repo"
 )
 
 type userGET struct {
@@ -24,7 +24,7 @@ func parseUserGet(u *model.User) userGET {
 }
 
 type Handler struct {
-	Repo userrepo.Repo
+	Repo repo.Repo
 }
 
 func (h *Handler) Get(c *gin.Context) {

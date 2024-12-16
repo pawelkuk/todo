@@ -9,8 +9,8 @@ import (
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
-	task "github.com/pawelkuk/todo/pkg/task/model"
-	taskrepo "github.com/pawelkuk/todo/pkg/task/repo"
+	"github.com/pawelkuk/todo/pkg/task/model"
+	"github.com/pawelkuk/todo/pkg/task/repo"
 	"github.com/spf13/cobra"
 )
 
@@ -48,7 +48,7 @@ Default: no due time`)
 }
 
 type AddHandler struct {
-	Repo taskrepo.Repo
+	Repo repo.Repo
 }
 
 func (h *AddHandler) Handle(cmd *cobra.Command, args []string) error {
@@ -74,19 +74,19 @@ func (h *AddHandler) Handle(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("could not parse due date: %w", err)
 		}
 	}
-	opts := []task.TaskOpt{}
+	opts := []model.TaskOpt{}
 	if !dueTime.IsZero() {
-		opts = append(opts, task.WithDueDate(dueTime.Format(time.DateOnly)))
+		opts = append(opts, model.WithDueDate(dueTime.Format(time.DateOnly)))
 	}
 	info, err := cmd.Flags().GetString("info")
 	if err != nil {
 		return fmt.Errorf("could not get info: %w", err)
 	}
 	if info != "" {
-		opts = append(opts, task.WithDescription(info))
+		opts = append(opts, model.WithDescription(info))
 	}
 	title := strings.Join(args, " ")
-	t, err := task.Parse(title, opts...)
+	t, err := model.Parse(title, opts...)
 	if err != nil {
 		return fmt.Errorf("could not parse task: %w", err)
 	}

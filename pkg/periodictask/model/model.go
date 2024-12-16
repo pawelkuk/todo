@@ -1,4 +1,4 @@
-package periodictask
+package model
 
 import (
 	"fmt"

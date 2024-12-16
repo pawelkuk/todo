@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"strings"
 
-	task "github.com/pawelkuk/todo/pkg/task/model"
-	taskrepo "github.com/pawelkuk/todo/pkg/task/repo"
+	"github.com/pawelkuk/todo/pkg/task/model"
+	"github.com/pawelkuk/todo/pkg/task/repo"
 	"github.com/spf13/cobra"
 )
 
@@ -40,7 +40,7 @@ func init() {
 }
 
 type DeleteHandler struct {
-	Repo taskrepo.Repo
+	Repo repo.Repo
 }
 
 func (h *DeleteHandler) Handle(cmd *cobra.Command, args []string) error {
@@ -59,7 +59,7 @@ func (h *DeleteHandler) Handle(cmd *cobra.Command, args []string) error {
 	if taskID == 0 {
 		return fmt.Errorf("could not much provided args: %s", strings.Join(args, " "))
 	}
-	t := &task.Task{ID: int64(taskID)}
+	t := &model.Task{ID: int64(taskID)}
 	err := h.Repo.Delete(cmd.Context(), t)
 	if err != nil {
 		return fmt.Errorf("could not delete task: %w", err)

@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	task "github.com/pawelkuk/todo/pkg/task/model"
-	taskrepo "github.com/pawelkuk/todo/pkg/task/repo"
+	"github.com/pawelkuk/todo/pkg/task/model"
+	"github.com/pawelkuk/todo/pkg/task/repo"
 	"github.com/spf13/cobra"
 )
 
@@ -39,8 +39,8 @@ func parseDue(d string) (time.Duration, error) {
 	return duration, nil
 }
 
-func listIncompleteTasks(cmd *cobra.Command, _ []string, toComplete string, repo taskrepo.Repo) ([]string, cobra.ShellCompDirective) {
-	tasks, err := repo.Query(cmd.Context(), task.QueryFilter{})
+func listIncompleteTasks(cmd *cobra.Command, _ []string, toComplete string, repo repo.Repo) ([]string, cobra.ShellCompDirective) {
+	tasks, err := repo.Query(cmd.Context(), model.QueryFilter{})
 	if err != nil {
 		fmt.Printf("could not query for tasks: %v\n", err)
 		return []string{}, cobra.ShellCompDirectiveNoFileComp

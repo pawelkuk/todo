@@ -11,6 +11,7 @@
 - [ ] scheduled tasks for specific days
 - [ ] reminders (email, push, etc...)
 - [x] show tasks for today (including done)
+- [ ] color code cli output
 
 ## non functional requirements
 
@@ -23,4 +24,7 @@
 - [ ] one click sign-up
 - [ ] separation of data
 - [ ] can export your data
-- [ ] only text - no images
+- [x] only text - no images
+- [ ] have consistent approach approach to logging
+- [ ] have consistent approach to error handling
+- [ ] have refactor to make it testable

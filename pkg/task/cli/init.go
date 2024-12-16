@@ -6,7 +6,7 @@ import (
 
 	"github.com/caarlos0/env/v11"
 	"github.com/pawelkuk/todo/pkg/config"
-	taskrepo "github.com/pawelkuk/todo/pkg/task/repo"
+	"github.com/pawelkuk/todo/pkg/task/repo"
 )
 
 var editHandler EditHandler
@@ -27,18 +27,18 @@ func Initialize() {
 	}
 	editHandler = EditHandler{
 		Config: cfg,
-		Repo:   &taskrepo.SQLiteRepo{DB: db},
+		Repo:   &repo.SQLiteRepo{DB: db},
 	}
 	listHandler = ListHandler{
-		Repo: &taskrepo.SQLiteRepo{DB: db},
+		Repo: &repo.SQLiteRepo{DB: db},
 	}
 	deleteHandler = DeleteHandler{
-		Repo: &taskrepo.SQLiteRepo{DB: db},
+		Repo: &repo.SQLiteRepo{DB: db},
 	}
 	completeHandler = CompleteHandler{
-		Repo: &taskrepo.SQLiteRepo{DB: db},
+		Repo: &repo.SQLiteRepo{DB: db},
 	}
 	addHandler = AddHandler{
-		Repo: &taskrepo.SQLiteRepo{DB: db},
+		Repo: &repo.SQLiteRepo{DB: db},
 	}
 }

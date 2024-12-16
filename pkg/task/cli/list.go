@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	task "github.com/pawelkuk/todo/pkg/task/model"
-	taskrepo "github.com/pawelkuk/todo/pkg/task/repo"
+	"github.com/pawelkuk/todo/pkg/task/model"
+	"github.com/pawelkuk/todo/pkg/task/repo"
 	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 )
@@ -46,11 +46,11 @@ func init() {
 }
 
 type ListHandler struct {
-	Repo taskrepo.Repo
+	Repo repo.Repo
 }
 
 func (h *ListHandler) Handle(cmd *cobra.Command, args []string) error {
-	qf := task.QueryFilter{}
+	qf := model.QueryFilter{}
 	all, err := cmd.Flags().GetBool("all")
 	if err != nil {
 		return fmt.Errorf("could not get flag: %w", err)
@@ -72,7 +72,7 @@ func (h *ListHandler) Handle(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("could not parse due date: %w", err)
 		}
-		tasks = lo.Filter(tasks, func(t task.Task, idx int) bool { return t.DueDate.Before(beforeTime) })
+		tasks = lo.Filter(tasks, func(t model.Task, idx int) bool { return t.DueDate.Before(beforeTime) })
 	}
 	after, err := cmd.Flags().GetString("after")
 	if err != nil {
@@ -83,7 +83,7 @@ func (h *ListHandler) Handle(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("could not parse due date: %w", err)
 		}
-		tasks = lo.Filter(tasks, func(t task.Task, idx int) bool { return t.DueDate.After(afterTime) })
+		tasks = lo.Filter(tasks, func(t model.Task, idx int) bool { return t.DueDate.After(afterTime) })
 	}
 	today, err := cmd.Flags().GetBool("today")
 	if err != nil {
@@ -91,9 +91,9 @@ func (h *ListHandler) Handle(cmd *cobra.Command, args []string) error {
 	}
 	if today {
 		todayStr := time.Now().Format(time.DateOnly)
-		tasks = lo.Filter(tasks, func(t task.Task, idx int) bool { return t.DueDate.Format(time.DateOnly) == todayStr })
+		tasks = lo.Filter(tasks, func(t model.Task, idx int) bool { return t.DueDate.Format(time.DateOnly) == todayStr })
 	}
-	res := lo.Map(tasks, func(t task.Task, idx int) string { return t.String() })
+	res := lo.Map(tasks, func(t model.Task, idx int) string { return t.String() })
 	if len(res) != 0 {
 		fmt.Println(strings.Join(res, "\n"))
 	} else {
