@@ -10,7 +10,7 @@
 - [ ] reoccurring tasks
 - [ ] scheduled tasks for specific days
 - [ ] reminders (email, push, etc...)
-- [ ] show tasks for today (including done) (missing api)
+- [x] show tasks for today (including done)
 
 ## non functional requirements
 

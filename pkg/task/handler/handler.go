@@ -41,6 +41,15 @@ type TaskPATCH struct {
 	Completed   *bool  `json:"completed"`
 }
 
+type TaskFilter struct {
+	After       time.Time `form:"after" time_format:"2006-01-02" time_utc:"1"`
+	DueDate     time.Time `form:"dueDate" time_format:"2006-01-02" time_utc:"1"`
+	Before      time.Time `form:"before" time_format:"2006-01-02" time_utc:"1"`
+	Completed   *bool     `form:"completed"`
+	Title       string    `form:"title"`
+	Description string    `form:"description"`
+}
+
 func parseTaskGet(task model.Task) taskGET {
 	return taskGET{
 		ID:          int(task.ID),
@@ -69,17 +78,47 @@ func (h *Handler) Get(c *gin.Context) {
 	c.JSON(http.StatusOK, parseTaskGet(*task))
 }
 
-func (h *Handler) List(c *gin.Context) {
-	tasks, err := h.Repo.Query(c.Request.Context(), model.QueryFilter{})
+func (h *Handler) GetList(c *gin.Context) {
+	ulrQueryParams := TaskFilter{}
+	err := c.ShouldBind(&ulrQueryParams)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	qf := parseQueryFilter(ulrQueryParams)
+	tasks, err := h.Repo.Query(c.Request.Context(), qf)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
-	res := taskList{}
+	res := taskList{Items: make([]taskGET, 0)}
 	for _, t := range tasks {
 		res.Items = append(res.Items, parseTaskGet(t))
 	}
 	c.JSON(http.StatusOK, res)
+}
+
+func parseQueryFilter(ulrQueryParams TaskFilter) model.QueryFilter {
+	qf := model.QueryFilter{}
+	if ulrQueryParams.Title != "" {
+		qf.Title = &ulrQueryParams.Title
+	}
+	if ulrQueryParams.Description != "" {
+		qf.Title = &ulrQueryParams.Description
+	}
+	if !ulrQueryParams.DueDate.IsZero() {
+		qf.DueDate = &ulrQueryParams.DueDate
+	}
+	if !ulrQueryParams.After.IsZero() {
+		qf.StartDueDate = &ulrQueryParams.After
+	}
+	if !ulrQueryParams.Before.IsZero() {
+		qf.EndDueDate = &ulrQueryParams.Before
+	}
+	if ulrQueryParams.Completed != nil {
+		qf.Completed = ulrQueryParams.Completed
+	}
+	return qf
 }
 
 func (h *Handler) Post(c *gin.Context) {

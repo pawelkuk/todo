@@ -49,7 +49,7 @@ func serve() error {
 	taskHandler := task.Handler{Repo: &taskrepo.SQLiteRepo{DB: db}}
 	t := r.Group("/tasks").Use(authMiddleware.Handle)
 	t.GET("/:id", taskHandler.Get)
-	t.GET("/", taskHandler.List)
+	t.GET("/", taskHandler.GetList)
 	t.POST("/", taskHandler.Post)
 	t.POST("/:id/*complete", taskHandler.PostComplete)
 	t.PATCH("/:id", taskHandler.Patch)

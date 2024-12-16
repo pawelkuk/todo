@@ -36,6 +36,16 @@ func applyFilter(filter model.QueryFilter, args *[]any, buf *bytes.Buffer) {
 		*args = append(*args, filter.DueDate.Format(time.DateOnly))
 	}
 
+	if filter.StartDueDate != nil {
+		wc = append(wc, "due_date >= ?")
+		*args = append(*args, filter.StartDueDate.Format(time.DateOnly))
+	}
+
+	if filter.EndDueDate != nil {
+		wc = append(wc, "due_date <= ?")
+		*args = append(*args, filter.EndDueDate.Format(time.DateOnly))
+	}
+
 	if len(wc) > 0 {
 		buf.WriteString(" WHERE ")
 		buf.WriteString(strings.Join(wc, " AND "))
