@@ -9,7 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	_ "github.com/mattn/go-sqlite3"
 	auth "github.com/pawelkuk/todo/pkg/auth/handler"
-	authmiddleware "github.com/pawelkuk/todo/pkg/auth/middleware"
+	"github.com/pawelkuk/todo/pkg/auth/middleware"
 	authrepo "github.com/pawelkuk/todo/pkg/auth/repo"
 	"github.com/pawelkuk/todo/pkg/config"
 	periodictask "github.com/pawelkuk/todo/pkg/periodictask/handler"
@@ -38,7 +38,7 @@ func serve() error {
 	}
 	r := gin.Default()
 
-	authMiddleware := authmiddleware.Middleware{Repo: &authrepo.SQLiteRepo{DB: db}}
+	authMiddleware := middleware.Middleware{Repo: &authrepo.SQLiteRepo{DB: db}}
 	authHandler := auth.Handler{
 		Repo:     &authrepo.SQLiteRepo{DB: db},
 		UserRepo: &userrepo.SQLiteRepo{DB: db}}
